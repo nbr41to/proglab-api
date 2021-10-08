@@ -55,10 +55,6 @@ app.command(
   }
 );
 
-app.get('/api/get/data', (res, req) => {
-  res.status(200).end();
-});
-
 app.view('learning_input', async ({ ack, body, view, client }) => {
   // モーダルでのデータ送信イベントを確認
   await ack();
