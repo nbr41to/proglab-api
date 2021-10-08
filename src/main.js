@@ -1,12 +1,12 @@
 const { App } = require('@slack/bolt');
 require('dotenv').config();
 
-// Initializes your app with your bot token and signing secret
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
+/* shortcutに変更 */
 app.command(
   '/learning',
   async ({ command, ack, respond, say, client, body }) => {
@@ -55,25 +55,25 @@ app.command(
   }
 );
 
-app.view('learning_input', async ({ ack, body, view, client, respond }) => {
+app.get('/api/get/data', (res, req) => {
+  res.status(200).end();
+});
+
+app.view('learning_input', async ({ ack, body, view, client }) => {
   // モーダルでのデータ送信イベントを確認
   await ack();
   // 入力値を使ってやりたいことをここで実装 - ここでは DB に保存して送信内容の確認を送っている
   // block_id: block_1 という input ブロック内で action_id: input_a の場合の入力
   const val = `${view['state']['values']['input_a']['learning_input']['value']}
-  
+    <@${body.user.id}>
     https://meet.around.co/r/learning-prog-lab
   `;
 
   // ユーザーにメッセージを送信
   try {
-    const { user } = await client.users.info({ user: body.user.id });
-    console.log(user);
     await client.chat.postMessage({
-      icon_url: user.profile.image_24,
       channel: '#test_slack_api',
       text: val,
-      username: user.profile.display_name,
     });
   } catch (error) {
     console.error(error);
