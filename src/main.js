@@ -70,6 +70,7 @@ app.view('submit_learning_input', async ({ ack, body, view, client }) => {
 
   try {
     await client.chat.postMessage({
+      token: process.env.SLACK_USER_TOKEN,
       channel: '#test_slack_api',
       as_user: true,
       text,
