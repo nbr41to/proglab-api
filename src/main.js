@@ -71,12 +71,12 @@ app.view('submit_learning_input', async ({ ack, body, view, client }) => {
   try {
     await client.chat.postMessage({
       channel: '#test_slack_api',
-      unfurl_links: true,
+      as_user: true,
       text,
     });
     await client.chat.postMessage({
       channel: '#test_slack_api',
-      text: '自習室のスレッド',
+      text: '自習室におけるスレッドです！\nURLの共有などに使ってください！',
     });
   } catch (error) {
     console.error(error);
