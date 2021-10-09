@@ -12,82 +12,85 @@ const app = new App({
 
 /* Express */
 
-// express.router.get('/get-test', (req, res) => {
-//   // ここでは Express のリクエストやレスポンスをそのまま扱う
-//   res.send('get-test!!');
-// });
+express.router.get('/', (req, res) => {
+  // ここでは Express のリクエストやレスポンスをそのまま扱う
+  res.send('Welcome progLab API!!');
+});
 
 /* Start Learning */
-app.shortcut('start_learning', async ({ ack, client, body }) => {
-  await ack();
+// app.shortcut('start_learning', async ({ ack, client, body }) => {
+//   await ack();
 
-  try {
-    await client.views.open({
-      // 適切な trigger_id を受け取ってから 3 秒以内に渡す
-      trigger_id: body.trigger_id,
-      view: {
-        type: 'modal',
-        callback_id: 'submit_learning_input',
-        title: {
-          type: 'plain_text',
-          text: 'オンライン自習室を開始します',
-        },
-        blocks: [
-          {
-            type: 'input',
-            block_id: 'text',
-            label: {
-              type: 'plain_text',
-              text: '意気込みをどうぞ！',
-            },
-            element: {
-              type: 'plain_text_input',
-              action_id: 'learning_input',
-              multiline: true,
-            },
-          },
-        ],
-        submit: {
-          type: 'plain_text',
-          text: 'Submit',
-        },
-      },
-    });
-  } catch (error) {
-    console.error(error);
-  }
-});
+//   try {
+//     await client.views.open({
+//       // 適切な trigger_id を受け取ってから 3 秒以内に渡す
+//       trigger_id: body.trigger_id,
+//       view: {
+//         type: 'modal',
+//         callback_id: 'submit_learning_input',
+//         title: {
+//           type: 'plain_text',
+//           text: 'オンライン自習室を開始します',
+//         },
+//         blocks: [
+//           {
+//             type: 'input',
+//             block_id: 'text',
+//             label: {
+//               type: 'plain_text',
+//               text: '意気込みをどうぞ！',
+//             },
+//             element: {
+//               type: 'plain_text_input',
+//               action_id: 'learning_input',
+//               multiline: true,
+//             },
+//           },
+//         ],
+//         submit: {
+//           type: 'plain_text',
+//           text: 'Submit',
+//         },
+//       },
+//     });
+//   } catch (error) {
+//     console.error(error);
+//   }
+// });
 
-app.view('submit_learning_input', async ({ ack, body, view, client }) => {
-  await ack();
+// const path = require('path');
+// app.view('submit_learning_input', async ({ ack, body, view, client }) => {
+//   await ack();
 
-  console.log('view: ', view);
+//   console.log('view: ', view);
 
-  const text = `${view['state']['values']['text']['learning_input']['value']}
-    <@${body.user.id}>
-    https://meet.around.co/r/learning-prog-lab
-  `;
+//   const text = `${view['state']['values']['text']['learning_input']['value']}
+//     <@${body.user.id}>
+//     https://meet.around.co/r/learning-prog-lab
+//   `;
 
-  try {
-    await client.chat.postMessage({
-      token: process.env.SLACK_USER_TOKEN,
-      channel: '#test_slack_api',
-      as_user: true,
-      text,
-    });
-    await client.chat.postMessage({
-      channel: '#test_slack_api',
-      text: '自習室におけるスレッドです！\nURLの共有などに使ってください！',
-    });
-  } catch (error) {
-    console.error(error);
-  }
-});
+//   try {
+//     await client.chat.postMessage({
+//       channel: '#test_slack_api',
+//       as_user: true,
+//       text,
+//       unfurl_links: true,
+//     });
+//     await client.chat.postMessage({
+//       channel: '#test_slack_api',
+//       text: '自習室におけるスレッドです！\nURLの共有などに使ってください！',
+//       icon_url: path.join(__dirname, '/asset/progL-logo.png'),
+//     });
+//   } catch (error) {
+//     console.error(error);
+//   }
+// });
 
 /* Reactions */
 const reactionEmojis = [
   'sparkles',
   'confetti_ball',
+  'heart',
   'tada',
   'thumbsup',
   'fire',
@@ -97,6 +100,7 @@ const reactionEmojis = [
 ];
 
 app.message('', async ({ message, client }) => {
+  console.log('message: ');
   let reactions = [];
   try {
     while (reactions.length < 3) {
@@ -108,8 +112,6 @@ app.message('', async ({ message, client }) => {
     if (Math.floor(Math.random() * 100) < 5) {
       reactions[Math.floor(Math.random() * 2)] = 'rainbow';
     }
-
-    console.log(reactions);
 
     Promise.all(
       reactions.map(async (reaction) => {
@@ -123,6 +125,10 @@ app.message('', async ({ message, client }) => {
   } catch (error) {
     console.error(error);
   }
+});
+
+app.message('https://meet.around.co/r/', async ({ say }) => {
+  await say(`スレッドを作成しました！\nURLの共有などに使ってください！`);
 });
 
 (async () => {
