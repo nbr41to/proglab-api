@@ -134,10 +134,13 @@ app.message('https://meet.around.co/r/', async ({ say }) => {
 /* Reactions Count */
 // ユーザーごとの回数, 使用された絵文字の回数
 app.event('reaction_added', async ({ event, client }) => {
-  console.log('reaction_added!!');
   try {
     const { reaction, user } = event;
-    incrementReactionData({ emoji: reaction, userId: user });
+    const result = incrementReactionData({ emoji: reaction, userId: user });
+    client.message({
+      channel: '07_achievement',
+      text: result,
+    });
     console.log('reaction_added: ', event);
   } catch (error) {
     console.error(error);
@@ -185,10 +188,11 @@ const incrementReactionData = (params) => {
   }
 
   fs.writeFile(path, JSON.stringify(data), () => {});
+  return JSON.stringify(data, null, 4);
 };
 
 /* Reactionsの報告 */
-app.shortcut('report_reactions', async ({ ack, client, say }) => {
+app.shortcut('reaction_report', async ({ ack, client, say }) => {
   await ack();
   try {
     const d = new Date();
