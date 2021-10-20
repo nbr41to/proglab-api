@@ -148,47 +148,52 @@ app.event('reaction_added', async ({ event, client }) => {
 });
 /* データを保存する関数 */
 const incrementReactionData = (params) => {
-  const { emoji, userId } = params;
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
-  const jsonFileName = `${year}-${month}.json`;
-  const dataFileList = fs.readdirSync('./src/data');
-  const path = `./src/data/${jsonFileName}`;
-  let data = {
-    userCount: [],
-    emojiCount: [],
-  };
-  if (dataFileList.includes(jsonFileName)) {
-    const json = fs.readFileSync(path, 'utf8');
-    data = JSON.parse(json);
-  }
-  /* increment user */
-  if (data.userCount.map((user) => user.id).includes(userId)) {
-    const userIndex = data.userCount.map((user) => user.id).indexOf(userId);
-    data.userCount[userIndex].count++;
-  } else {
-    data.userCount.push({
-      id: userId,
-      count: 1,
-    });
-  }
+  try {
+    const { emoji, userId } = params;
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const jsonFileName = `${year}-${month}.json`;
+    const dataFileList = fs.readdirSync('./src/data');
+    const path = `./src/data/${jsonFileName}`;
+    let data = {
+      userCount: [],
+      emojiCount: [],
+    };
+    if (dataFileList.includes(jsonFileName)) {
+      const json = fs.readFileSync(path, 'utf8');
+      data = JSON.parse(json);
+    }
 
-  /* increment emoji */
-  if (data.emojiCount.map((emoji) => emoji.name).includes(emoji)) {
-    const emojiIndex = data.emojiCount
-      .map((emoji) => emoji.name)
-      .indexOf(emoji);
-    data.emojiCount[emojiIndex].count++;
-  } else {
-    data.emojiCount.push({
-      name: emoji,
-      count: 1,
-    });
-  }
+    /* increment user */
+    if (data.userCount.map((user) => user.id).includes(userId)) {
+      const userIndex = data.userCount.map((user) => user.id).indexOf(userId);
+      data.userCount[userIndex].count++;
+    } else {
+      data.userCount.push({
+        id: userId,
+        count: 1,
+      });
+    }
 
-  fs.writeFile(path, JSON.stringify(data), () => {});
-  return JSON.stringify(data, null, 4);
+    /* increment emoji */
+    if (data.emojiCount.map((emoji) => emoji.name).includes(emoji)) {
+      const emojiIndex = data.emojiCount
+        .map((emoji) => emoji.name)
+        .indexOf(emoji);
+      data.emojiCount[emojiIndex].count++;
+    } else {
+      data.emojiCount.push({
+        name: emoji,
+        count: 1,
+      });
+    }
+
+    fs.writeFile(path, JSON.stringify(data), () => {});
+    return JSON.stringify(data, null, 4);
+  } catch (error) {
+    throw error;
+  }
 };
 
 /* Reactionsの報告 */
@@ -205,9 +210,15 @@ app.shortcut('reaction_report', async ({ ack, client, say }) => {
     if (dataFileList.includes(jsonFileName)) {
       const json = fs.readFileSync(path, 'utf8');
       data = JSON.parse(json);
-      say(JSON.stringify(data, null, 4));
+      client.message({
+        channel: '07_achievement',
+        text: JSON.stringify(data, null, 4),
+      });
     } else {
-      say('現在データはありません');
+      client.message({
+        channel: '07_achievement',
+        text: '現在データはありません',
+      });
     }
   } catch (error) {
     console.error(error);
