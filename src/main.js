@@ -118,8 +118,14 @@ app.message(async ({ message, client }) => {
   }
 });
 
+let loading = false;
 app.message('https://meet.around.co/r/', async ({ say }) => {
-  await say(`スレッドを作成しました！\nURLの共有などに使ってください！`);
+  if (loading) return;
+  loading = true;
+  setTimeout(() => {
+    loading = false;
+    await say(`スレッドを作成しました！\nURLの共有などに使ってください！`);
+  }, 1000 * 10); // 10秒後
 });
 
 (async () => {
