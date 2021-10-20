@@ -99,29 +99,20 @@ const reactionEmojis = [
   'rocket',
 ];
 
-app.message('', async ({ message, client }) => {
-  console.log('message: ');
-  let reactions = [];
+app.message(async ({ message, client }) => {
   try {
-    while (reactions.length < 3) {
-      reactions.push(
-        reactionEmojis[Math.floor(Math.random() * reactionEmojis.length)]
-      );
-      reactions = [...new Set(reactions)];
+    if (Math.floor(Math.random() * 100) < 30) {
+      let reaction =
+        reactionEmojis[Math.floor(Math.random() * reactionEmojis.length)];
+      if (Math.floor(Math.random() * 100) < 5) {
+        reaction = 'rainbow';
+      }
+      await client.reactions.add({
+        name: reaction,
+        channel: message.channel,
+        timestamp: message.ts,
+      });
     }
-    if (Math.floor(Math.random() * 100) < 5) {
-      reactions[Math.floor(Math.random() * 2)] = 'rainbow';
-    }
-
-    Promise.all(
-      reactions.map(async (reaction) => {
-        await client.reactions.add({
-          name: reaction,
-          channel: message.channel,
-          timestamp: message.ts,
-        });
-      })
-    );
   } catch (error) {
     console.error(error);
   }
