@@ -6,7 +6,6 @@ import {
 import dotenv from 'dotenv';
 dotenv.config();
 
-const fs = require('fs');
 import { App, ExpressReceiver } from '@slack/bolt';
 
 const express = new ExpressReceiver({
@@ -16,8 +15,6 @@ const app = new App({
   token: process.env.SLACK_BOT_TOKEN || '',
   receiver: express,
 });
-
-const PORT = parseInt(process.env.PORT || '') || 3000;
 
 /* Express */
 express.router.get('/', (req, res) => {
@@ -50,6 +47,8 @@ app.event('reaction_added', async ({ event, client }) => {
   }
 });
 
+const port = parseInt(process.env.PORT || '3000');
+console.log('process.env.PORT: ', process.env.PORT);
 app
-  .start(PORT)
-  .then(() => console.log(`⚡️running by http://localhost:${PORT}`));
+  .start(port)
+  .then(() => console.log(`⚡️running by http://localhost:${port}`));
