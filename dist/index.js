@@ -37,10 +37,13 @@ app.event('reaction_added', ({ event, client }) => __awaiter(void 0, void 0, voi
         const { reaction, user } = event;
         /* Reactionの保存 */
         yield (0, reactions_1.addReaction)({ reactionName: reaction, userId: user });
+        /* test */
+        const summary = yield (0, reactions_1.getMonthlyReactions)({ client });
+        console.log(summary);
         /* Summaryの投稿 */
         const result = yield (0, reactions_1.checkReactionMonth)();
         if (!result) {
-            const summary = yield (0, reactions_1.getMonthlyReactions)();
+            const summary = yield (0, reactions_1.getMonthlyReactions)({ client });
             yield client.chat.postMessage({
                 token: process.env.SLACK_BOT_TOKEN || '',
                 channel: '#07_achievement',

@@ -121,6 +121,7 @@ app.message(async ({ message, client }) => {
   }
 });
 
+/* Aroundの際のスレッド */
 let loading = false;
 app.message('https://meet.around.co/r/', async ({ say }) => {
   if (loading) return;

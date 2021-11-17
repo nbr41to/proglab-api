@@ -1,4 +1,5 @@
 import { db } from './config';
+import { WebClient } from '@slack/web-api';
 
 /* Reactionを保存する */
 export const addReaction = async (params: {
@@ -43,47 +44,61 @@ export const checkReactionMonth = async (): Promise<boolean> => {
  * 月のリアクション情報を取得する
  * @params `${currentYear}-${currentMonth}`の形式で
  */
-export const getMonthlyReactions = async (month?: number) => {
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-  const targetMonth = month || `${currentYear}-${currentMonth}`;
+export const getMonthlyReactions = async (param: {
+  month?: number;
+  client: WebClient;
+}) => {
+  try {
+    const { month, client } = param;
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    const targetMonth = month || `${currentYear}-${currentMonth}`;
 
-  /* データの取得 */
-  const snapshot = await db
-    .collection('slack_reactions')
-    .where('atDate', '==', targetMonth)
-    .get();
-  const monthlyReactions = snapshot.docs.map(
-    (doc) =>
-      doc.data() as { userId: string; reactionName: string; atDate: string },
-  );
-  const totalReactions = monthlyReactions.map(
-    (reaction) => reaction.reactionName,
-  );
-  const totalUsers = monthlyReactions.map((reaction) => reaction.userId);
-  const reactions = Array.from(new Set(totalReactions));
-  const users = Array.from(new Set(totalUsers));
+    /* データの取得 */
+    const snapshot = await db
+      .collection('slack_reactions')
+      .where('atDate', '==', targetMonth)
+      .get();
+    const monthlyReactions = snapshot.docs.map(
+      (doc) =>
+        doc.data() as { userId: string; reactionName: string; atDate: string },
+    );
+    const totalReactions = monthlyReactions.map(
+      (reaction) => reaction.reactionName,
+    );
+    const totalUserIds = monthlyReactions.map((reaction) => reaction.userId);
+    const totalUsers = await Promise.all(
+      totalUserIds.map(async (id) => {
+        const response = await client.users.info({ user: id });
+        return response?.user?.name || 'no_data';
+      }),
+    );
+    const reactions = Array.from(new Set(totalReactions));
+    const users = Array.from(new Set(totalUsers));
 
-  return {
-    usersCounts: users
-      .map((user) => {
-        const count = totalUsers.filter((userId) => userId === user).length;
-        return {
-          userId: user,
-          count,
-        };
-      })
-      .sort((a, b) => b.count - a.count),
-    reactionsCounts: reactions
-      .map((reaction) => {
-        const count = totalReactions.filter(
-          (reactionName) => reactionName === reaction,
-        ).length;
-        return {
-          reactionName: reaction,
-          count,
-        };
-      })
-      .sort((a, b) => b.count - a.count),
-  };
+    return {
+      usersCounts: users
+        .map((user) => {
+          const count = totalUsers.filter((userId) => userId === user).length;
+          return {
+            name: user,
+            count,
+          };
+        })
+        .sort((a, b) => b.count - a.count),
+      reactionsCounts: reactions
+        .map((reaction) => {
+          const count = totalReactions.filter(
+            (reactionName) => reactionName === reaction,
+          ).length;
+          return {
+            reaction,
+            count,
+          };
+        })
+        .sort((a, b) => b.count - a.count),
+    };
+  } catch (error) {
+    throw error;
+  }
 };
