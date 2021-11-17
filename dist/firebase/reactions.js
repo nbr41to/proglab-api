@@ -48,50 +48,39 @@ exports.checkReactionMonth = checkReactionMonth;
  * 月のリアクション情報を取得する
  * @params `${currentYear}-${currentMonth}`の形式で
  */
-const getMonthlyReactions = (param) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { month, client } = param;
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1;
-        const targetMonth = month || `${currentYear}-${currentMonth}`;
-        /* データの取得 */
-        const snapshot = yield config_1.db
-            .collection('slack_reactions')
-            .where('atDate', '==', targetMonth)
-            .get();
-        const monthlyReactions = snapshot.docs.map((doc) => doc.data());
-        const totalReactions = monthlyReactions.map((reaction) => reaction.reactionName);
-        const totalUserIds = monthlyReactions.map((reaction) => reaction.userId);
-        const totalUsers = yield Promise.all(totalUserIds.map((id) => __awaiter(void 0, void 0, void 0, function* () {
-            var _b;
-            const response = yield client.users.info({ user: id });
-            return ((_b = response === null || response === void 0 ? void 0 : response.user) === null || _b === void 0 ? void 0 : _b.name) || 'no_data';
-        })));
-        const reactions = Array.from(new Set(totalReactions));
-        const users = Array.from(new Set(totalUsers));
-        return {
-            usersCounts: users
-                .map((user) => {
-                const count = totalUsers.filter((userId) => userId === user).length;
-                return {
-                    name: user,
-                    count,
-                };
-            })
-                .sort((a, b) => b.count - a.count),
-            reactionsCounts: reactions
-                .map((reaction) => {
-                const count = totalReactions.filter((reactionName) => reactionName === reaction).length;
-                return {
-                    reaction,
-                    count,
-                };
-            })
-                .sort((a, b) => b.count - a.count),
-        };
-    }
-    catch (error) {
-        throw error;
-    }
+const getMonthlyReactions = (month) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    const targetMonth = month || `${currentYear}-${currentMonth}`;
+    /* データの取得 */
+    const snapshot = yield config_1.db
+        .collection('slack_reactions')
+        .where('atDate', '==', targetMonth)
+        .get();
+    const monthlyReactions = snapshot.docs.map((doc) => doc.data());
+    const totalReactions = monthlyReactions.map((reaction) => reaction.reactionName);
+    const totalUsers = monthlyReactions.map((reaction) => reaction.userId);
+    const reactions = Array.from(new Set(totalReactions));
+    const users = Array.from(new Set(totalUsers));
+    return {
+        usersCounts: users
+            .map((user) => {
+            const count = totalUsers.filter((userId) => userId === user).length;
+            return {
+                userId: user,
+                count,
+            };
+        })
+            .sort((a, b) => b.count - a.count),
+        reactionsCounts: reactions
+            .map((reaction) => {
+            const count = totalReactions.filter((reactionName) => reactionName === reaction).length;
+            return {
+                reactionName: reaction,
+                count,
+            };
+        })
+            .sort((a, b) => b.count - a.count),
+    };
 });
 exports.getMonthlyReactions = getMonthlyReactions;

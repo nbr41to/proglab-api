@@ -32,14 +32,10 @@ app.event('reaction_added', async ({ event, client }) => {
     /* Reactionの保存 */
     await addReaction({ reactionName: reaction, userId: user });
 
-    /* test */
-    const summary = await getMonthlyReactions({ client });
-    console.log(summary);
-
     /* Summaryの投稿 */
     const result = await checkReactionMonth();
     if (!result) {
-      const summary = await getMonthlyReactions({ client });
+      const summary = await getMonthlyReactions();
       await client.chat.postMessage({
         token: process.env.SLACK_BOT_TOKEN || '',
         channel: '#07_achievement',
