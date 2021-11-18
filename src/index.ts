@@ -1,7 +1,8 @@
+import { compileMonthlySummary } from './lib/compileMonthlySummary';
 import {
   addReaction,
-  checkReactionMonth,
-  getMonthlyReactions,
+  checkPostSummaryTrigger,
+  getMonthlyReactionsSummary,
 } from './firebase/reactions';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -18,11 +19,7 @@ const app = new App({
 
 /* Express */
 express.router.get('/', (req, res) => {
-  // ここでは Express のリクエストやレスポンスをそのまま扱う
-  res.json({ status: 200, message: 'Welcome progLab API!!' });
-});
-express.router.get('/test-auth', (req, res) => {
-  res.json({ status: 200, message: 'Welcome progLab API!!' });
+  res.json({ status: 200, message: 'Welcome!! progLab API' });
 });
 
 /* Reactionの監視 */
@@ -32,18 +29,17 @@ app.event('reaction_added', async ({ event, client }) => {
     /* Reactionの保存 */
     await addReaction({ reactionName: reaction, userId: user });
 
-    /* test */
-    const summary = await getMonthlyReactions({ client });
-    console.log(summary);
-
     /* Summaryの投稿 */
-    const result = await checkReactionMonth();
-    if (!result) {
-      const summary = await getMonthlyReactions({ client });
+    /* 月が更新されたかどうかをチェック */
+    const checkResult = await checkPostSummaryTrigger();
+
+    /* 月が更新された場合に投稿する */
+    if (checkResult) {
+      const summary = await getMonthlyReactionsSummary();
       await client.chat.postMessage({
         token: process.env.SLACK_BOT_TOKEN || '',
         channel: '#07_achievement',
-        text: JSON.stringify(summary, null, 4),
+        text: compileMonthlySummary(summary),
       });
     }
   } catch (error) {
@@ -52,7 +48,6 @@ app.event('reaction_added', async ({ event, client }) => {
 });
 
 const port = parseInt(process.env.PORT || '3000');
-console.log('process.env.PORT: ', process.env.PORT);
 app
   .start(port)
   .then(() => console.log(`⚡️running by http://localhost:${port}`));

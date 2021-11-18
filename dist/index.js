@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const compileMonthlySummary_1 = require("./lib/compileMonthlySummary");
 const reactions_1 = require("./firebase/reactions");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
@@ -25,11 +26,7 @@ const app = new bolt_1.App({
 });
 /* Express */
 express.router.get('/', (req, res) => {
-    // ここでは Express のリクエストやレスポンスをそのまま扱う
-    res.json({ status: 200, message: 'Welcome progLab API!!' });
-});
-express.router.get('/test-auth', (req, res) => {
-    res.json({ status: 200, message: 'Welcome progLab API!!' });
+    res.json({ status: 200, message: 'Welcome!! progLab API' });
 });
 /* Reactionの監視 */
 app.event('reaction_added', ({ event, client }) => __awaiter(void 0, void 0, void 0, function* () {
@@ -37,17 +34,16 @@ app.event('reaction_added', ({ event, client }) => __awaiter(void 0, void 0, voi
         const { reaction, user } = event;
         /* Reactionの保存 */
         yield (0, reactions_1.addReaction)({ reactionName: reaction, userId: user });
-        /* test */
-        const summary = yield (0, reactions_1.getMonthlyReactions)({ client });
-        console.log(summary);
         /* Summaryの投稿 */
-        const result = yield (0, reactions_1.checkReactionMonth)();
-        if (!result) {
-            const summary = yield (0, reactions_1.getMonthlyReactions)({ client });
+        /* 月が更新されたかどうかをチェック */
+        const checkResult = yield (0, reactions_1.checkPostSummaryTrigger)();
+        /* 月が更新された場合に投稿する */
+        if (checkResult) {
+            const summary = yield (0, reactions_1.getMonthlyReactionsSummary)();
             yield client.chat.postMessage({
                 token: process.env.SLACK_BOT_TOKEN || '',
                 channel: '#07_achievement',
-                text: JSON.stringify(summary, null, 4),
+                text: (0, compileMonthlySummary_1.compileMonthlySummary)(summary),
             });
         }
     }
@@ -56,7 +52,6 @@ app.event('reaction_added', ({ event, client }) => __awaiter(void 0, void 0, voi
     }
 }));
 const port = parseInt(process.env.PORT || '3000');
-console.log('process.env.PORT: ', process.env.PORT);
 app
     .start(port)
     .then(() => console.log(`⚡️running by http://localhost:${port}`));

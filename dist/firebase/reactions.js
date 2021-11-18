@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMonthlyReactions = exports.checkReactionMonth = exports.addReaction = void 0;
+exports.getMonthlyReactionsSummary = exports.checkPostSummaryTrigger = exports.addReaction = void 0;
 const config_1 = require("./config");
 /* Reactionを保存する */
 const addReaction = (params) => __awaiter(void 0, void 0, void 0, function* () {
@@ -26,12 +26,12 @@ const addReaction = (params) => __awaiter(void 0, void 0, void 0, function* () {
         .collection('slack')
         .doc('last_reaction_at_month')
         .set({
-        data: `${currentYear}-${currentMonth}`,
+        date: `${currentYear}-${currentMonth}`,
     });
 });
 exports.addReaction = addReaction;
-/* 前回のReactionから月の変更を確認する */
-const checkReactionMonth = () => __awaiter(void 0, void 0, void 0, function* () {
+/* 月の変更を確認する（サマリーの投稿のトリガーとなる） */
+const checkPostSummaryTrigger = () => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
@@ -40,17 +40,18 @@ const checkReactionMonth = () => __awaiter(void 0, void 0, void 0, function* () 
         .collection('slack')
         .doc('last_reaction_at_month')
         .get();
-    const lastReactionAt = (_a = lastReactionAtRef.data()) === null || _a === void 0 ? void 0 : _a.lastReactionAt;
+    const lastReactionAt = (_a = lastReactionAtRef.data()) === null || _a === void 0 ? void 0 : _a.date;
+    if (!lastReactionAt)
+        return false;
     return lastReactionAt !== `${currentYear}-${currentMonth}`;
 });
-exports.checkReactionMonth = checkReactionMonth;
+exports.checkPostSummaryTrigger = checkPostSummaryTrigger;
 /**
  * 月のリアクション情報を取得する
  * @params `${currentYear}-${currentMonth}`の形式で
  */
-const getMonthlyReactions = (param) => __awaiter(void 0, void 0, void 0, function* () {
+const getMonthlyReactionsSummary = (month) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { month, client } = param;
         const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
         const targetMonth = month || `${currentYear}-${currentMonth}`;
@@ -60,21 +61,18 @@ const getMonthlyReactions = (param) => __awaiter(void 0, void 0, void 0, functio
             .where('atDate', '==', targetMonth)
             .get();
         const monthlyReactions = snapshot.docs.map((doc) => doc.data());
-        const totalReactions = monthlyReactions.map((reaction) => reaction.reactionName);
         const totalUserIds = monthlyReactions.map((reaction) => reaction.userId);
-        const totalUsers = yield Promise.all(totalUserIds.map((id) => __awaiter(void 0, void 0, void 0, function* () {
-            var _b;
-            const response = yield client.users.info({ user: id });
-            return ((_b = response === null || response === void 0 ? void 0 : response.user) === null || _b === void 0 ? void 0 : _b.name) || 'no_data';
-        })));
+        const totalReactions = monthlyReactions.map((reaction) => reaction.reactionName);
+        /* それぞれを重複のない配列に変換 */
+        const users = Array.from(new Set(totalUserIds));
         const reactions = Array.from(new Set(totalReactions));
-        const users = Array.from(new Set(totalUsers));
-        return {
+        const result = {
+            date: `${currentYear}年${currentMonth}月`,
             usersCounts: users
                 .map((user) => {
-                const count = totalUsers.filter((userId) => userId === user).length;
+                const count = totalUserIds.filter((userId) => userId === user).length;
                 return {
-                    name: user,
+                    userId: user,
                     count,
                 };
             })
@@ -83,15 +81,23 @@ const getMonthlyReactions = (param) => __awaiter(void 0, void 0, void 0, functio
                 .map((reaction) => {
                 const count = totalReactions.filter((reactionName) => reactionName === reaction).length;
                 return {
-                    reaction,
+                    reaction: `:${reaction}:`,
                     count,
                 };
             })
                 .sort((a, b) => b.count - a.count),
         };
+        /* 取得した際に最終更新月を更新 */
+        yield config_1.db
+            .collection('slack')
+            .doc('last_reaction_at_month')
+            .set({
+            date: `${currentYear}-${currentMonth}`,
+        });
+        return result;
     }
     catch (error) {
         throw error;
     }
 });
-exports.getMonthlyReactions = getMonthlyReactions;
+exports.getMonthlyReactionsSummary = getMonthlyReactionsSummary;

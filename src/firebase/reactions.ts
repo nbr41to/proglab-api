@@ -21,12 +21,12 @@ export const addReaction = async (params: {
     .collection('slack')
     .doc('last_reaction_at_month')
     .set({
-      data: `${currentYear}-${currentMonth}`,
+      date: `${currentYear}-${currentMonth}`,
     });
 };
 
-/* 前回のReactionから月の変更を確認する */
-export const checkReactionMonth = async (): Promise<boolean> => {
+/* 月の変更を確認する（サマリーの投稿のトリガーとなる） */
+export const checkPostSummaryTrigger = async (): Promise<boolean> => {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
@@ -35,8 +35,8 @@ export const checkReactionMonth = async (): Promise<boolean> => {
     .collection('slack')
     .doc('last_reaction_at_month')
     .get();
-  const lastReactionAt = lastReactionAtRef.data()?.lastReactionAt;
-
+  const lastReactionAt = lastReactionAtRef.data()?.date;
+  if (!lastReactionAt) return false;
   return lastReactionAt !== `${currentYear}-${currentMonth}`;
 };
 
@@ -44,12 +44,8 @@ export const checkReactionMonth = async (): Promise<boolean> => {
  * 月のリアクション情報を取得する
  * @params `${currentYear}-${currentMonth}`の形式で
  */
-export const getMonthlyReactions = async (param: {
-  month?: number;
-  client: WebClient;
-}) => {
+export const getMonthlyReactionsSummary = async (month?: string) => {
   try {
-    const { month, client } = param;
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
     const targetMonth = month || `${currentYear}-${currentMonth}`;
@@ -63,25 +59,22 @@ export const getMonthlyReactions = async (param: {
       (doc) =>
         doc.data() as { userId: string; reactionName: string; atDate: string },
     );
+    const totalUserIds = monthlyReactions.map((reaction) => reaction.userId);
     const totalReactions = monthlyReactions.map(
       (reaction) => reaction.reactionName,
     );
-    const totalUserIds = monthlyReactions.map((reaction) => reaction.userId);
-    const totalUsers = await Promise.all(
-      totalUserIds.map(async (id) => {
-        const response = await client.users.info({ user: id });
-        return response?.user?.name || 'no_data';
-      }),
-    );
-    const reactions = Array.from(new Set(totalReactions));
-    const users = Array.from(new Set(totalUsers));
 
-    return {
+    /* それぞれを重複のない配列に変換 */
+    const users = Array.from(new Set(totalUserIds));
+    const reactions = Array.from(new Set(totalReactions));
+
+    const result = {
+      date: `${currentYear}年${currentMonth}月`,
       usersCounts: users
         .map((user) => {
-          const count = totalUsers.filter((userId) => userId === user).length;
+          const count = totalUserIds.filter((userId) => userId === user).length;
           return {
-            name: user,
+            userId: user,
             count,
           };
         })
@@ -92,12 +85,22 @@ export const getMonthlyReactions = async (param: {
             (reactionName) => reactionName === reaction,
           ).length;
           return {
-            reaction,
+            reaction: `:${reaction}:`,
             count,
           };
         })
         .sort((a, b) => b.count - a.count),
     };
+
+    /* 取得した際に最終更新月を更新 */
+    await db
+      .collection('slack')
+      .doc('last_reaction_at_month')
+      .set({
+        date: `${currentYear}-${currentMonth}`,
+      });
+
+    return result;
   } catch (error) {
     throw error;
   }
