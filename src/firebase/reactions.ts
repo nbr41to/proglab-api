@@ -46,9 +46,13 @@ export const checkPostSummaryTrigger = async (): Promise<boolean> => {
  */
 export const getMonthlyReactionsSummary = async (month?: string) => {
   try {
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth() + 1;
-    const targetMonth = month || `${currentYear}-${currentMonth}`;
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth(); // 0-11
+    if (currentMonth === 0) {
+      currentYear -= 1;
+      currentMonth = 12;
+    }
+    const targetMonth = month || `${currentYear}-${currentMonth}`; // 先月のデータ
 
     /* データの取得 */
     const snapshot = await db
