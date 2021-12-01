@@ -9,6 +9,9 @@ dotenv.config();
 
 import { App, ExpressReceiver } from '@slack/bolt';
 
+// import { WebClient } from '@slack/web-api';
+// const SlackWebClient = new WebClient(process.env.SLACK_BOT_TOKEN); // Boltを使わないときはこっち使う
+
 const express = new ExpressReceiver({
   signingSecret: process.env.SLACK_SIGNING_SECRET || '',
 });
@@ -31,10 +34,11 @@ app.event('reaction_added', async ({ event, client }) => {
 
     /* Summaryの投稿 */
     /* 月が更新されたかどうかをチェック */
-    const checkResult = await checkPostSummaryTrigger();
+    const checkResult = await checkPostSummaryTrigger(); // 最終更新月の更新も含む
 
     /* 月が更新された場合に投稿する */
     if (checkResult) {
+      console.log('++++ 月が更新されたのでSummaryを投稿します ++++');
       const summary = await getMonthlyReactionsSummary();
       await client.chat.postMessage({
         token: process.env.SLACK_BOT_TOKEN || '',
@@ -51,3 +55,5 @@ const port = parseInt(process.env.PORT || '3000');
 app
   .start(port)
   .then(() => console.log(`⚡️running by http://localhost:${port}`));
+
+checkPostSummaryTrigger().then(console.log);

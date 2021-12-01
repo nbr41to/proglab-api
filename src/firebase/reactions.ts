@@ -15,14 +15,6 @@ export const addReaction = async (params: {
     userId,
     atDate: `${currentYear}-${currentMonth}`,
   });
-
-  /* 最終更新履歴を更新 */
-  await db
-    .collection('slack')
-    .doc('last_reaction_at_month')
-    .set({
-      date: `${currentYear}-${currentMonth}`,
-    });
 };
 
 /* 月の変更を確認する（サマリーの投稿のトリガーとなる） */
@@ -36,6 +28,7 @@ export const checkPostSummaryTrigger = async (): Promise<boolean> => {
     .doc('last_reaction_at_month')
     .get();
   const lastReactionAt = lastReactionAtRef.data()?.date;
+  console.log(lastReactionAt);
   if (!lastReactionAt) return false;
   return lastReactionAt !== `${currentYear}-${currentMonth}`;
 };
@@ -95,14 +88,6 @@ export const getMonthlyReactionsSummary = async (month?: string) => {
         })
         .sort((a, b) => b.count - a.count),
     };
-
-    /* 取得した際に最終更新月を更新 */
-    await db
-      .collection('slack')
-      .doc('last_reaction_at_month')
-      .set({
-        date: `${currentYear}-${currentMonth}`,
-      });
 
     return result;
   } catch (error) {

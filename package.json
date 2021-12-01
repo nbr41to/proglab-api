@@ -5,6 +5,7 @@
   "license": "MIT",
   "dependencies": {
     "@slack/bolt": "^3.7.0",
+    "@slack/web-api": "^6.5.1",
     "dotenv": "^10.0.0",
     "firebase": "^9.4.1",
     "firebase-admin": "^10.0.0",
