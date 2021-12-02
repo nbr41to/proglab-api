@@ -21,16 +21,29 @@ export const addReaction = async (params: {
 export const checkPostSummaryTrigger = async (): Promise<boolean> => {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
+  try {
+    /* 現在の最終更新月を取得 */
+    const lastReactionAtRef = await db
+      .collection('slack')
+      .doc('last_reaction_at_month')
+      .get();
+    const lastReactionAt = lastReactionAtRef.data()?.date;
+    console.log('lastReactionAt >>', lastReactionAt);
+    console.log('current >>', `${currentYear}-${currentMonth}`);
+    if (!lastReactionAt) return false;
 
-  /* 現在の最終更新月を取得 */
-  const lastReactionAtRef = await db
-    .collection('slack')
-    .doc('last_reaction_at_month')
-    .get();
-  const lastReactionAt = lastReactionAtRef.data()?.date;
-  console.log(lastReactionAt);
-  if (!lastReactionAt) return false;
-  return lastReactionAt !== `${currentYear}-${currentMonth}`;
+    /* 確認した際に最終更新月を更新 */
+    await db
+      .collection('slack')
+      .doc('last_reaction_at_month')
+      .set({
+        date: `${currentYear}-${currentMonth}`,
+      });
+    return lastReactionAt !== `${currentYear}-${currentMonth}`;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
 };
 
 /**
