@@ -28,8 +28,8 @@ export const checkPostSummaryTrigger = async (): Promise<boolean> => {
       .doc('last_reaction_at_month')
       .get();
     const lastReactionAt = lastReactionAtRef.data()?.date;
-    console.log('lastReactionAt >>', lastReactionAt);
-    console.log('current >>', `${currentYear}-${currentMonth}`);
+    console.log('FireStoreから取得した前回の月 >>', lastReactionAt);
+    console.log('今回更新される月 >>', `${currentYear}-${currentMonth}`);
     if (!lastReactionAt) return false;
 
     /* 確認した際に最終更新月を更新 */

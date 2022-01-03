@@ -35,6 +35,7 @@ app.event('reaction_added', async ({ event, client }) => {
     /* Summaryの投稿 */
     /* 月が更新されたかどうかをチェック */
     const checkResult = await checkPostSummaryTrigger(); // 最終更新月の更新も含む
+    console.log('checkResult >>', checkResult);
 
     /* 月が更新された場合に投稿する */
     if (checkResult) {
