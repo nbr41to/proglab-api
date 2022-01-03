@@ -48,7 +48,7 @@ app.event('reaction_added', async ({ event, client }) => {
       });
     }
   } catch (error) {
-    console.error(error);
+    console.error("Error:app.event'reaction_added':", error);
   }
 });
 
@@ -56,5 +56,3 @@ const port = parseInt(process.env.PORT || '3000');
 app
   .start(port)
   .then(() => console.log(`⚡️running by http://localhost:${port}`));
-
-checkPostSummaryTrigger().then(console.log);

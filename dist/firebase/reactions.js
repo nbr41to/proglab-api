@@ -21,13 +21,6 @@ const addReaction = (params) => __awaiter(void 0, void 0, void 0, function* () {
         userId,
         atDate: `${currentYear}-${currentMonth}`,
     });
-    /* 最終更新履歴を更新 */
-    yield config_1.db
-        .collection('slack')
-        .doc('last_reaction_at_month')
-        .set({
-        date: `${currentYear}-${currentMonth}`,
-    });
 });
 exports.addReaction = addReaction;
 /* 月の変更を確認する（サマリーの投稿のトリガーとなる） */
@@ -35,15 +28,30 @@ const checkPostSummaryTrigger = () => __awaiter(void 0, void 0, void 0, function
     var _a;
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
-    /* 現在の最終更新月を取得 */
-    const lastReactionAtRef = yield config_1.db
-        .collection('slack')
-        .doc('last_reaction_at_month')
-        .get();
-    const lastReactionAt = (_a = lastReactionAtRef.data()) === null || _a === void 0 ? void 0 : _a.date;
-    if (!lastReactionAt)
+    try {
+        /* 現在の最終更新月を取得 */
+        const lastReactionAtRef = yield config_1.db
+            .collection('slack')
+            .doc('last_reaction_at_month')
+            .get();
+        const lastReactionAt = (_a = lastReactionAtRef.data()) === null || _a === void 0 ? void 0 : _a.date;
+        console.log('FireStoreから取得した前回の月 >>', lastReactionAt);
+        console.log('今回更新される月 >>', `${currentYear}-${currentMonth}`);
+        if (!lastReactionAt)
+            return false;
+        /* 確認した際に最終更新月を更新 */
+        yield config_1.db
+            .collection('slack')
+            .doc('last_reaction_at_month')
+            .set({
+            date: `${currentYear}-${currentMonth}`,
+        });
+        return lastReactionAt !== `${currentYear}-${currentMonth}`;
+    }
+    catch (error) {
+        console.error('Error:checkPostSummaryTrigger:', error);
         return false;
-    return lastReactionAt !== `${currentYear}-${currentMonth}`;
+    }
 });
 exports.checkPostSummaryTrigger = checkPostSummaryTrigger;
 /**
@@ -52,9 +60,13 @@ exports.checkPostSummaryTrigger = checkPostSummaryTrigger;
  */
 const getMonthlyReactionsSummary = (month) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1;
-        const targetMonth = month || `${currentYear}-${currentMonth}`;
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth(); // 0-11
+        if (currentMonth === 0) {
+            currentYear -= 1;
+            currentMonth = 12;
+        }
+        const targetMonth = month || `${currentYear}-${currentMonth}`; // 先月のデータ
         /* データの取得 */
         const snapshot = yield config_1.db
             .collection('slack_reactions')
@@ -87,13 +99,6 @@ const getMonthlyReactionsSummary = (month) => __awaiter(void 0, void 0, void 0, 
             })
                 .sort((a, b) => b.count - a.count),
         };
-        /* 取得した際に最終更新月を更新 */
-        yield config_1.db
-            .collection('slack')
-            .doc('last_reaction_at_month')
-            .set({
-            date: `${currentYear}-${currentMonth}`,
-        });
         return result;
     }
     catch (error) {

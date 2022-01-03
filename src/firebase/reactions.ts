@@ -41,7 +41,7 @@ export const checkPostSummaryTrigger = async (): Promise<boolean> => {
       });
     return lastReactionAt !== `${currentYear}-${currentMonth}`;
   } catch (error) {
-    console.error(error);
+    console.error('Error:checkPostSummaryTrigger:', error);
     return false;
   }
 };

@@ -17,6 +17,8 @@ const reactions_1 = require("./firebase/reactions");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const bolt_1 = require("@slack/bolt");
+// import { WebClient } from '@slack/web-api';
+// const SlackWebClient = new WebClient(process.env.SLACK_BOT_TOKEN); // Boltを使わないときはこっち使う
 const express = new bolt_1.ExpressReceiver({
     signingSecret: process.env.SLACK_SIGNING_SECRET || '',
 });
@@ -36,9 +38,11 @@ app.event('reaction_added', ({ event, client }) => __awaiter(void 0, void 0, voi
         yield (0, reactions_1.addReaction)({ reactionName: reaction, userId: user });
         /* Summaryの投稿 */
         /* 月が更新されたかどうかをチェック */
-        const checkResult = yield (0, reactions_1.checkPostSummaryTrigger)();
+        const checkResult = yield (0, reactions_1.checkPostSummaryTrigger)(); // 最終更新月の更新も含む
+        console.log('checkResult >>', checkResult);
         /* 月が更新された場合に投稿する */
         if (checkResult) {
+            console.log('++++ 月が更新されたのでSummaryを投稿します ++++');
             const summary = yield (0, reactions_1.getMonthlyReactionsSummary)();
             yield client.chat.postMessage({
                 token: process.env.SLACK_BOT_TOKEN || '',
@@ -48,7 +52,7 @@ app.event('reaction_added', ({ event, client }) => __awaiter(void 0, void 0, voi
         }
     }
     catch (error) {
-        console.error(error);
+        console.error("Error:app.event'reaction_added':", error);
     }
 }));
 const port = parseInt(process.env.PORT || '3000');
